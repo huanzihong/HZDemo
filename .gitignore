@@ -1,0 +1,10 @@
+.vs/
+.vscode/
+.ignore
+.vsconfig
+.idea/
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+.cache/
