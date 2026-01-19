@@ -20,26 +20,28 @@ public class HZDemo : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
+			"Slate",
+			"GameplayAbilities",
+			"GameplayTags",
+			"GameplayTasks",
+			"MassEntity",
+			"MassSpawner",
+			"MassCommon",
+			"MassNavigation",
+			"MassMovement",
+			"MassAIBehavior",
+			"MassRepresentation",
+			"MassSignals",
+			"StateTreeModule",
+			"SmartObjectsModule",
+			"MassSmartObjects",
+			"AnimToTexture",
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 
 		PublicIncludePaths.AddRange(new string[] {
 			"HZDemo",
-			"HZDemo/Variant_Platforming",
-			"HZDemo/Variant_Platforming/Animation",
-			"HZDemo/Variant_Combat",
-			"HZDemo/Variant_Combat/AI",
-			"HZDemo/Variant_Combat/Animation",
-			"HZDemo/Variant_Combat/Gameplay",
-			"HZDemo/Variant_Combat/Interfaces",
-			"HZDemo/Variant_Combat/UI",
-			"HZDemo/Variant_SideScrolling",
-			"HZDemo/Variant_SideScrolling/AI",
-			"HZDemo/Variant_SideScrolling/Gameplay",
-			"HZDemo/Variant_SideScrolling/Interfaces",
-			"HZDemo/Variant_SideScrolling/UI"
 		});
 
 		// Uncomment if you are using Slate UI

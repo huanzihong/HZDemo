@@ -7,9 +7,11 @@
 #include "Logging/LogMacros.h"
 #include "HZDemoCharacter.generated.h"
 
+class UHZAbilitySystemComponent;
 class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
+class UMassEntityConfigAsset;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -48,6 +50,12 @@ protected:
 	/** Mouse Look Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* MouseLookAction;
+	
+	UPROPERTY(EditAnywhere, Category="Input")
+    UInputAction* ShootAction;
+	
+	UPROPERTY(EditAnywhere, Category="Bullet")
+	UMassEntityConfigAsset* BulletConfig;
 
 public:
 
@@ -67,6 +75,7 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
+	void Shoot(const FInputActionValue& Value);
 public:
 
 	/** Handles move inputs from either controls or UI interfaces */
@@ -92,5 +101,10 @@ public:
 
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	virtual void PossessedBy(AController* NewController) override;
+
+	UFUNCTION(BlueprintCallable)
+	UHZAbilitySystemComponent* GetAbilitySystemComponent();
 };
 

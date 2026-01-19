@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "LS3MSmsQkoU=",
+  "success": true,
+  "projectFilePath": "E:\\Upro\\HZDemo\\Plugins\\UnLua\\Source\\UnLuaDefaultParamCollectorUbtPlugin\\UnLuaDefaultParamCollectorUbtPlugin.ubtplugin.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\hhz\\.nuget\\packages\\microsoft.csharp\\4.7.0\\microsoft.csharp.4.7.0.nupkg.sha512"
+  ],
+  "logs": []
+}

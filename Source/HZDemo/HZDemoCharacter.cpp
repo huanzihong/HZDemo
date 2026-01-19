@@ -11,6 +11,9 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "HZDemo.h"
+#include "ECS/Bullet/BulletSubsystem.h"
+#include "GAS/HZAbilitySystemComponent.h"
+#include "Player/HZPlayerState.h"
 
 AHZDemoCharacter::AHZDemoCharacter()
 {
@@ -65,6 +68,9 @@ void AHZDemoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AHZDemoCharacter::Look);
+
+		//Shooting
+		EnhancedInputComponent->BindAction(ShootAction,ETriggerEvent::Started,this,&AHZDemoCharacter::Shoot);
 	}
 	else
 	{
@@ -88,6 +94,14 @@ void AHZDemoCharacter::Look(const FInputActionValue& Value)
 
 	// route the input
 	DoLook(LookAxisVector.X, LookAxisVector.Y);
+}
+
+void AHZDemoCharacter::Shoot(const FInputActionValue& Value)
+{
+	if(auto BulletSys = GetWorld()->GetSubsystem<UBulletSubsystem>())
+	{
+		BulletSys->SpawnBullet(BulletConfig,GetActorLocation(),GetActorForwardVector());
+	}
 }
 
 void AHZDemoCharacter::DoMove(float Right, float Forward)
@@ -130,4 +144,31 @@ void AHZDemoCharacter::DoJumpEnd()
 {
 	// signal the character to stop jumping
 	StopJumping();
+}
+
+void AHZDemoCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	AHZPlayerState* PS = GetPlayerState<AHZPlayerState>();
+	if (PS)
+	{
+		
+		// Set the ASC on the Server. Clients do this in OnRep_PlayerState()
+		//auto AbilitySystemComponent = Cast<UHZAbilitySystemComponent>(PS->GetAbilitySystemComponent());
+
+		// AI won't have PlayerControllers so we can init again here just to be sure. No harm in initing twice for heroes that have PlayerControllers.
+		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS, this);
+	}
+}
+
+UHZAbilitySystemComponent* AHZDemoCharacter::GetAbilitySystemComponent()
+{
+	AHZPlayerState* PS = GetPlayerState<AHZPlayerState>();
+	if (PS)
+	{
+		return PS->GetAbilitySystemComponent();
+	}else
+	{
+		return nullptr;
+	}
 }
