@@ -1,22 +1,15 @@
 ﻿#pragma once
-#include "MassEntityQuery.h"
 #include "MassProcessor.h"
-#include "EnemyMoveProcessor.generated.h"
+#include "ZombieAnimProcessor.generated.h"
 UCLASS()
-class HZDEMO_API UEnemyWanderProcessor : public UMassProcessor
+class UZombieAnimProcessor : public UMassProcessor 
 {
 	GENERATED_BODY()
-
 public:
-	UEnemyWanderProcessor();
-
+	UZombieAnimProcessor();
 protected:
-	
 	virtual void ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager) override;
-
-	
 	virtual void Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context) override;
 
-	
-	FMassEntityQuery EntityQuery;
+	FMassEntityQuery AnimationEntityQuery;
 };

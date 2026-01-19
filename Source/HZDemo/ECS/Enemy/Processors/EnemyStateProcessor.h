@@ -1,14 +1,13 @@
 ﻿#pragma once
-#include "MassEntityQuery.h"
 #include "MassProcessor.h"
-#include "EnemyMoveProcessor.generated.h"
+#include "EnemyStateProcessor.generated.h"
 UCLASS()
-class HZDEMO_API UEnemyWanderProcessor : public UMassProcessor
+class HZDEMO_API UEnemyStateProcessor : public UMassProcessor
 {
 	GENERATED_BODY()
 
 public:
-	UEnemyWanderProcessor();
+	UEnemyStateProcessor();
 
 protected:
 	

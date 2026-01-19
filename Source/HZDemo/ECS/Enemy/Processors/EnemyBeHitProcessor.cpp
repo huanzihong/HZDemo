@@ -75,6 +75,7 @@ void UKnockBackProcessor::Execute(FMassEntityManager& EntityManager, FMassExecut
                     
 				// 应用击退速度
 				DesiredMovementFragment.DesiredVelocity = Knockback.OriginalVelocity + Knockback.Direction * Knockback.Force * Attenuation+FVector{0,0,1000};
+
 			}
 			else
 			{
@@ -83,6 +84,7 @@ void UKnockBackProcessor::Execute(FMassEntityManager& EntityManager, FMassExecut
 				
 				// 移除击退标签
 				Context.Defer().RemoveTag<FKnockTag>(Context.GetEntity(i));
+				Context.Defer().DestroyEntity(Context.GetEntity(i));
 			}
 		}
 	});

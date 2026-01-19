@@ -37,7 +37,7 @@ void UBulletInitializerProcessor::InitializeInternal(UObject& Owner, const TShar
 void UBulletInitializerProcessor::SignalEntities(FMassEntityManager& EntityManager, FMassExecutionContext& Context,
                                                  FMassSignalNameLookup& EntitySignals)
 {
-	EntityQuery.ForEachEntityChunk(EntityManager, Context, [this](FMassExecutionContext& Context)
+	EntityQuery.ForEachEntityChunk(Context, [this](FMassExecutionContext& Context)
 	{
 		auto SignalSubsystem = Context.GetMutableSubsystem<UMassSignalSubsystem>();
 		auto BulletFragments = Context.GetFragmentView<FBulletFragment>();

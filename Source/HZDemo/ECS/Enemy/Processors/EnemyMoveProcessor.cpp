@@ -3,29 +3,28 @@
 #include "MassCommonFragments.h"
 #include "MassExecutionContext.h"
 #include "MassNavigationFragments.h"
+#include "MassSignalSubsystem.h"
+#include "MassStateTreeTypes.h"
 #include "ECS/Enemy/Traits/BeHitTags.h"
 #include "ECS/Enemy/Traits/EnemyFragment.h"
 #include "Kismet/GameplayStatics.h"
 
-UEnemyMoveToPlayerProcessor::UEnemyMoveToPlayerProcessor():EntityQuery(*this)
+UEnemyWanderProcessor::UEnemyWanderProcessor():EntityQuery(*this)
 {
 	bAutoRegisterWithProcessingPhases = true;
-	ExecutionOrder.ExecuteBefore.Add(UE::Mass::ProcessorGroupNames::Avoidance);
-	ExecutionOrder.ExecuteBefore.Add(UE::Mass::ProcessorGroupNames::Movement);
 }
 
-void UEnemyMoveToPlayerProcessor::ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager)
+void UEnemyWanderProcessor::ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager)
 {
-	//不处于受击
-	EntityQuery.AddTagRequirement<FKnockTag>(EMassFragmentPresence::None);
-	
+	EntityQuery.AddTagRequirement<FChasePlayerTag>(EMassFragmentPresence::None);
 	EntityQuery.AddTagRequirement<FEnemyTag>(EMassFragmentPresence::All);
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadOnly);
 	EntityQuery.AddRequirement<FMassMoveTargetFragment>(EMassFragmentAccess::ReadWrite);
+	EntityQuery.AddSubsystemRequirement<UMassSignalSubsystem>(EMassFragmentAccess::ReadWrite);
 	
 }
 
-void UEnemyMoveToPlayerProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
+void UEnemyWanderProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
 	FVector PlayerLocation = UGameplayStatics::GetPlayerPawn(Context.GetWorld(), 0)->GetActorLocation();
 
@@ -33,25 +32,24 @@ void UEnemyMoveToPlayerProcessor::Execute(FMassEntityManager& EntityManager, FMa
 	{
 		const TConstArrayView<FTransformFragment> TransformList = MassExecutionContext.GetFragmentView<FTransformFragment>();
 		const TArrayView<FMassMoveTargetFragment> MoveTargetList = MassExecutionContext.GetMutableFragmentView<FMassMoveTargetFragment>();
-
+		auto MassSignalSubsystem = MassExecutionContext.GetMutableSubsystem<UMassSignalSubsystem>();
+		
 		for (int EntityIndex = 0; EntityIndex < MassExecutionContext.GetNumEntities(); ++EntityIndex)
 		{
-			const FVector EntityLocation = TransformList[EntityIndex].GetTransform().GetLocation();
-
-			FMassMoveTargetFragment& MassMoveTargetFragment = MoveTargetList[EntityIndex];
-			MassMoveTargetFragment.Center = PlayerLocation;
-			MassMoveTargetFragment.Forward = (PlayerLocation - EntityLocation).GetSafeNormal();
-			MassMoveTargetFragment.DistanceToGoal = FVector::Dist(EntityLocation, MassMoveTargetFragment.Center);
-
-			if (MassMoveTargetFragment.GetCurrentAction() == EMassMovementAction::Stand && MassMoveTargetFragment.DistanceToGoal > 50.f)
+			auto Transform = TransformList[EntityIndex];
+			auto MoveTarget = MoveTargetList[EntityIndex];
+			if (MoveTarget.GetCurrentAction() == EMassMovementAction::Move)
 			{
-				MassMoveTargetFragment.CreateNewAction(EMassMovementAction::Move, *Context.GetWorld());
-				MassMoveTargetFragment.IntentAtGoal = EMassMovementAction::Stand;
-			}
-			else if (MassMoveTargetFragment.GetCurrentAction() == EMassMovementAction::Move && MassMoveTargetFragment.DistanceToGoal <= 50.f)
-			{
-				MassMoveTargetFragment.CreateNewAction(EMassMovementAction::Stand, *Context.GetWorld());
+				auto Distance = FVector::Dist2D(Transform.GetTransform().GetLocation(), MoveTarget.Center);
+				//DrawDebugPoint(GetWorld(), Transform.GetTransform().GetLocation(), 50.0f, FColor::Red, true, 1.0f);
+				//DrawDebugPoint(GetWorld(), MoveTarget.Center, 50.0f, FColor::Blue, true, 1.0f);
+				if (Distance < 100.f)
+				{
+					//这个激活tick ontick transitions
+					MassSignalSubsystem->SignalEntityDeferred(Context, UE::Mass::Signals::StateTreeActivate, Context.GetEntity(EntityIndex));	
+				}
 			}
 		}
 	});
 }
+

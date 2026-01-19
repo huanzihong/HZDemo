@@ -4,6 +4,13 @@
 #include "ECS/Enemy/Subsystem/EnemyHashGridSubsystem.h"
 #include "EnemyFragment.generated.h"
 
+UENUM(BlueprintType)
+enum class EEnemyState : uint8
+{
+	Other,
+	ChasePlayer,
+};
+
 USTRUCT()
 struct HZDEMO_API FEnemyFragment : public FMassFragment
 {
@@ -14,12 +21,21 @@ struct HZDEMO_API FEnemyFragment : public FMassFragment
 
 	UPROPERTY(EditAnywhere)
 	FVector CollisionExtent = FVector(100.f);
+	
+	UPROPERTY(EditAnywhere)
+	EEnemyState EnemyState = EEnemyState::Other;
 
 	FEnemyHashGrid::FCellLocation CellLocation;
 };
 
 USTRUCT()
 struct HZDEMO_API FEnemyTag : public FMassTag
+{
+	GENERATED_BODY()
+};
+
+USTRUCT()
+struct HZDEMO_API FChasePlayerTag : public FMassTag
 {
 	GENERATED_BODY()
 };

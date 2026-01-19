@@ -1,8 +1,12 @@
 ﻿#include "EnemyHashGridProcessor.h"
 
+#include "MassActorSubsystem.h"
 #include "MassCommonFragments.h"
 #include "MassExecutionContext.h"
+#include "MassSignalSubsystem.h"
+#include "MassStateTreeTypes.h"
 #include "ECS/Enemy/Traits/EnemyFragment.h"
+#include "Kismet/GameplayStatics.h"
 
 UEnemyInitializer::UEnemyInitializer(): EntityQuery(*this)
 {
@@ -19,7 +23,7 @@ void UEnemyInitializer::ConfigureQueries(const TSharedRef<FMassEntityManager>& E
 
 void UEnemyInitializer::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
-	EntityQuery.ForEachEntityChunk(EntityManager, Context, [this](FMassExecutionContext& Context)
+	EntityQuery.ForEachEntityChunk(Context, [this](FMassExecutionContext& Context)
 	{
 		auto TransformFragments = Context.GetFragmentView<FTransformFragment>();
 		auto EnemyFragments = Context.GetMutableFragmentView<FEnemyFragment>();
@@ -78,14 +82,17 @@ void UpdateEnemyHashGridProcessor::ConfigureQueries(const TSharedRef<FMassEntity
 	UpdateHashGridQuery.AddRequirement<FEnemyFragment>(EMassFragmentAccess::ReadWrite);
 	UpdateHashGridQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadOnly);
 	UpdateHashGridQuery.AddSubsystemRequirement<UEnemyHashGridSubsystem>(EMassFragmentAccess::ReadWrite);
+	UpdateHashGridQuery.AddSubsystemRequirement<UMassSignalSubsystem>(EMassFragmentAccess::ReadWrite);
 }
 
 void UpdateEnemyHashGridProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
-	UpdateHashGridQuery.ForEachEntityChunk(Context, [this](FMassExecutionContext& Context)
+	FVector PlayerLocation = UGameplayStatics::GetPlayerPawn(Context.GetWorld(), 0)->GetActorLocation();
+	UpdateHashGridQuery.ForEachEntityChunk(Context, [this,PlayerLocation](FMassExecutionContext& Context)
 	{
 		SCOPED_NAMED_EVENT(STAT_UpdateHashGrid, FColor::Red);
-		auto BulletHellSubsystem = Context.GetMutableSubsystem<UEnemyHashGridSubsystem>();
+		auto HashGridSubsystem = Context.GetMutableSubsystem<UEnemyHashGridSubsystem>();
+		auto MassSignalSubsystem= Context.GetMutableSubsystem<UMassSignalSubsystem>();
 		auto BHEnemyFragments = Context.GetMutableFragmentView<FEnemyFragment>();
 		auto TransformFragments = Context.GetFragmentView<FTransformFragment>();
 		
@@ -97,7 +104,21 @@ void UpdateEnemyHashGridProcessor::Execute(FMassEntityManager& EntityManager, FM
 
 			auto Location = TransformFragment.GetTransform().GetLocation();
 
-			BHEnemyFragment.CellLocation = BulletHellSubsystem->GetHashGrid_Mutable().Move(Context.GetEntity(EntityIdx), BHEnemyFragment.CellLocation, FBox::BuildAABB(Location, BHEnemyFragment.CollisionExtent));
+			BHEnemyFragment.CellLocation = HashGridSubsystem->GetHashGrid_Mutable().Move(Context.GetEntity(EntityIdx), BHEnemyFragment.CellLocation, FBox::BuildAABB(Location, BHEnemyFragment.CollisionExtent));
+		}
+
+		TArray<FMassEntityHandle> Entities;
+			HashGridSubsystem->GetHashGrid().Query(FBox::BuildAABB(PlayerLocation, FVector(2500.f)), Entities);
+
+		for(auto Entity: Entities)
+		{
+			auto EnemyFragment = Context.GetEntityManagerChecked().GetFragmentDataPtr<FEnemyFragment>(Entity);
+			if(EnemyFragment->EnemyState != EEnemyState::ChasePlayer)
+			{
+				MassSignalSubsystem->SignalEntity(UE::Mass::Signals::StateTreeActivate,Entity);
+				EnemyFragment->EnemyState = EEnemyState::ChasePlayer;
+				Context.Defer().AddTag<FChasePlayerTag>(Entity);
+			}
 		}
 	});
 }
