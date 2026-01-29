@@ -36,6 +36,7 @@ public class HZDemo : ModuleRules
 			"SmartObjectsModule",
 			"MassSmartObjects",
 			"AnimToTexture",
+			"Niagara"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

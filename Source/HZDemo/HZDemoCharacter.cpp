@@ -12,8 +12,13 @@
 #include "InputActionValue.h"
 #include "HZDemo.h"
 #include "ECS/Bullet/BulletSubsystem.h"
+#include "Engine/SkeletalMeshSocket.h"
 #include "GAS/HZAbilitySystemComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Player/CombatComponent.h"
 #include "Player/HZPlayerState.h"
+#include "Weapon/Weapon.h"
+#include "ECS/Enemy/Subsystem/EnemyHashGridSubsystem.h"
 
 AHZDemoCharacter::AHZDemoCharacter()
 {
@@ -51,6 +56,22 @@ AHZDemoCharacter::AHZDemoCharacter()
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+	
+	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat"));
+
+	CurrentFOV = DefaultFOV;
+}
+
+void AHZDemoCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (CombatComponent && FollowCamera)
+	{
+		float TargetFOV = CombatComponent->GetAimming() ? AimedFOV : DefaultFOV;
+		CurrentFOV = FMath::FInterpTo(CurrentFOV, TargetFOV, DeltaSeconds, FOVInterpSpeed);
+		FollowCamera->SetFieldOfView(CurrentFOV);
+	}
 }
 
 void AHZDemoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -71,6 +92,11 @@ void AHZDemoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 		//Shooting
 		EnhancedInputComponent->BindAction(ShootAction,ETriggerEvent::Started,this,&AHZDemoCharacter::Shoot);
+
+		EnhancedInputComponent->BindAction(AimAction,ETriggerEvent::Triggered,this,&AHZDemoCharacter::Aimming);
+		EnhancedInputComponent->BindAction(AimAction,ETriggerEvent::Completed,this,&AHZDemoCharacter::Aimming);
+		
+		EnhancedInputComponent->BindAction(EquipAction,ETriggerEvent::Started,this,&AHZDemoCharacter::Equip);
 	}
 	else
 	{
@@ -100,7 +126,110 @@ void AHZDemoCharacter::Shoot(const FInputActionValue& Value)
 {
 	if(auto BulletSys = GetWorld()->GetSubsystem<UBulletSubsystem>())
 	{
-		BulletSys->SpawnBullet(BulletConfig,GetActorLocation(),GetActorForwardVector());
+		
+		if(auto EquippedWeapon = CombatComponent->GetEquippedWeapon())
+		{
+			if(auto BulletConfig = EquippedWeapon->GetBulletConfig())
+			{
+				//获取枪口位置
+				const USkeletalMeshSocket* MuzzleFlashSocket = EquippedWeapon->GetWeaponMesh()->GetSocketByName("MuzzleFlash");
+				if (MuzzleFlashSocket == nullptr) return;
+
+				const FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(EquippedWeapon->GetWeaponMesh());
+				FVector MuzzleLocation = SocketTransform.GetLocation();
+				
+				// 获取屏幕中心准星位置
+				FVector2D ViewportSize;
+				if (GEngine && GEngine->GameViewport)
+				{
+					GEngine->GameViewport->GetViewportSize(ViewportSize);
+				}
+				FVector2D CrosshairLocation(ViewportSize.X / 2.f, ViewportSize.Y / 2.f);
+				FVector CrosshairWorldPosition;
+				FVector CrosshairWorldDirection;
+				bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(
+					UGameplayStatics::GetPlayerController(this, 0),
+					CrosshairLocation,
+					CrosshairWorldPosition,
+					CrosshairWorldDirection
+				);
+				
+				if (bScreenToWorld)
+				{
+					FVector TargetLocation;
+					bool bHitEnemy = false;
+					
+					// 先尝试用HashGrid查询Mass敌人
+					if (UEnemyHashGridSubsystem* EnemyGridSys = GetWorld()->GetSubsystem<UEnemyHashGridSubsystem>())
+					{
+						FVector HitLocation;
+						FMassEntityHandle HitEntity;
+						if (EnemyGridSys->RaycastEnemy(CrosshairWorldPosition, CrosshairWorldDirection, 80000.f, HitLocation, HitEntity))
+						{
+							TargetLocation = HitLocation;
+							bHitEnemy = true;
+							DrawDebugSphere(GetWorld(), TargetLocation, 20.f, 12, FColor::Green, false, 2.f);
+						}
+					}
+					
+					// 如果没击中Mass敌人，再检测普通碰撞体（如环境）
+					if (!bHitEnemy)
+					{
+						FVector TraceStart = CrosshairWorldPosition;
+						FVector TraceEnd = CrosshairWorldPosition + CrosshairWorldDirection * 80000.f;
+						
+						FHitResult HitResult;
+						FCollisionQueryParams QueryParams;
+						QueryParams.AddIgnoredActor(this);
+						QueryParams.AddIgnoredActor(EquippedWeapon);
+						
+						bool bHit = GetWorld()->LineTraceSingleByChannel(
+							HitResult,
+							TraceStart,
+							TraceEnd,
+							ECC_Visibility,
+							QueryParams
+						);
+						
+						if (bHit)
+						{
+							TargetLocation = HitResult.ImpactPoint;
+							DrawDebugSphere(GetWorld(), TargetLocation, 10.f, 12, FColor::Blue, false, 2.f);
+						}
+						else
+						{
+							TargetLocation = TraceEnd;
+						}
+					}
+					
+					// 计算从枪口到目标的方向
+					FVector ShootDirection = (TargetLocation - MuzzleLocation).GetSafeNormal();
+					
+					DrawDebugSphere(GetWorld(), MuzzleLocation, 10.f, 12, FColor::Red, false, 2.f);
+					DrawDebugLine(GetWorld(), MuzzleLocation, TargetLocation, FColor::Yellow, false, 2.f, 0, 2.f);
+					
+					BulletSys->SpawnBullet(BulletConfig, MuzzleLocation, ShootDirection);
+				}
+				
+			}
+		}
+		
+	}
+}
+
+void AHZDemoCharacter::Aimming(const FInputActionValue& Value)
+{
+	bool bAim = Value.Get<bool>();
+	
+	CombatComponent->SetAimming(bAim);
+	
+}
+
+void AHZDemoCharacter::Equip(const FInputActionValue& Value)
+{
+	if (CombatComponent)
+	{
+		CombatComponent->EquipWeapon(CombatComponent->GetOverlappingWeapon());
 	}
 }
 
@@ -171,4 +300,9 @@ UHZAbilitySystemComponent* AHZDemoCharacter::GetAbilitySystemComponent()
 	{
 		return nullptr;
 	}
+}
+
+UCombatComponent* AHZDemoCharacter::GetCombatComponent()
+{
+	return CombatComponent;
 }

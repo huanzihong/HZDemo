@@ -12,6 +12,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
 class UMassEntityConfigAsset;
+class UCombatComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -53,14 +54,18 @@ protected:
 	
 	UPROPERTY(EditAnywhere, Category="Input")
     UInputAction* ShootAction;
-	
-	UPROPERTY(EditAnywhere, Category="Bullet")
-	UMassEntityConfigAsset* BulletConfig;
 
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* AimAction;
+	
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* EquipAction;
 public:
 
 	/** Constructor */
 	AHZDemoCharacter();	
+
+	virtual void Tick(float DeltaSeconds) override;
 
 protected:
 
@@ -76,6 +81,10 @@ protected:
 	void Look(const FInputActionValue& Value);
 
 	void Shoot(const FInputActionValue& Value);
+
+	void Aimming(const FInputActionValue& Value);
+
+	void Equip(const FInputActionValue& Value);
 public:
 
 	/** Handles move inputs from either controls or UI interfaces */
@@ -106,5 +115,23 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	UHZAbilitySystemComponent* GetAbilitySystemComponent();
+
+	UCombatComponent* GetCombatComponent();
+
+protected:
+	UPROPERTY(EditAnywhere, Category = "Camera")
+	float DefaultFOV = 90.f;
+
+	UPROPERTY(EditAnywhere, Category = "Camera")
+	float AimedFOV = 60.f;
+
+	UPROPERTY(EditAnywhere, Category = "Camera")
+	float FOVInterpSpeed = 10.f;
+
+	float CurrentFOV;
+
+private:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UCombatComponent* CombatComponent;
 };
 
