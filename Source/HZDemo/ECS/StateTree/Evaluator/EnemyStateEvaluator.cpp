@@ -23,10 +23,11 @@ void FEnemyStateEvaluator::Tick(FStateTreeExecutionContext& Context, const float
 	if(FVector::Dist2D(InstanceData.TargetLocation.EndOfPathPosition.GetValue(),PlayerLocation)>100)
 	{
 		InstanceData.bRePath = true;
+		InstanceData.TargetLocation.EndOfPathPosition = PlayerLocation;
 	}else
 	{
-		InstanceData.bRePath = true;
+		InstanceData.bRePath = false;
 	}
-	InstanceData.TargetLocation.EndOfPathPosition = PlayerLocation;
+	
 	InstanceData.EnemyState = HitSubsystem.EnemyState;
 }

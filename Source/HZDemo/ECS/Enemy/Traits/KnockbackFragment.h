@@ -17,7 +17,7 @@ struct HZDEMO_API FKnockbackFragment : public FMassFragment
 	float StartTime = 0.0f;
     
 	// 击退持续时间
-	float Duration = 0.3f;
+	float Duration = 3.0f;
     
 	// 原始速度（用于击退后恢复）
 	FVector OriginalVelocity = FVector::ZeroVector;

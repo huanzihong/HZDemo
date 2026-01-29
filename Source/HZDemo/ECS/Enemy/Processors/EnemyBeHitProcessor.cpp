@@ -74,7 +74,7 @@ void UKnockBackProcessor::Execute(FMassEntityManager& EntityManager, FMassExecut
 				float Attenuation = 1.0f - FMath::Square(Alpha);
                     
 				// 应用击退速度
-				DesiredMovementFragment.DesiredVelocity = Knockback.OriginalVelocity + Knockback.Direction * Knockback.Force * Attenuation+FVector{0,0,1000};
+				DesiredMovementFragment.DesiredVelocity = (Knockback.Direction*1.5+FVector{0,0,4}) * Knockback.Force * Attenuation;
 
 			}
 			else

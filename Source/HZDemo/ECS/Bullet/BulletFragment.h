@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "MassEntityElementTypes.h"
 #include "MassEntityTraitBase.h"
+#include "NiagaraComponent.h"
 #include "BulletFragment.generated.h"
 
 UENUM(BlueprintType)
@@ -15,7 +16,7 @@ struct FBulletFragment : public FMassFragment
 	GENERATED_BODY()
 
 	FVector SpawnLocation;
-	
+
 	FVector Direction;
 
 	UPROPERTY(EditAnywhere)
@@ -30,7 +31,22 @@ struct FBulletFragment : public FMassFragment
 	UPROPERTY(EditAnywhere)
 	EBulletHitEffect BulletHitEffect = EBulletHitEffect::KnockUp;
 
+	// Explosion settings
+	UPROPERTY(EditAnywhere, Category = "Explosion")
+	bool bTriggerExplosion = false;
+
+	UPROPERTY(EditAnywhere, Category = "Explosion")
+	float ExplosionRadius = 300.f;
+
+	UPROPERTY(EditAnywhere, Category = "Explosion")
+	float ExplosionKnockbackForce = 2000.f;
+
+	// Trail effect component
+	TWeakObjectPtr<UNiagaraComponent> TrailEffect;
 	
+	// Trail effect asset
+	UPROPERTY(EditAnywhere, Category = "Trail Effect")
+	TSoftObjectPtr<UNiagaraSystem> TrailEffectAsset;
 };
 
 USTRUCT()

@@ -37,7 +37,9 @@ void UEnemyInitializer::Execute(FMassEntityManager& EntityManager, FMassExecutio
 			auto TransformFragment = TransformFragments[EntityIdx];
 			auto Location = TransformFragment.GetTransform().GetLocation();
 			
-			EnemyFragment.CellLocation = HashGrid.Add(Context.GetEntity(EntityIdx), FBox::BuildAABB(Location, EnemyFragment.CollisionExtent));
+			// 使用胶囊体范围构建AABB用于HashGrid
+			FVector Extent(EnemyFragment.CapsuleRadius, EnemyFragment.CapsuleRadius, EnemyFragment.CapsuleHalfHeight);
+			EnemyFragment.CellLocation = HashGrid.Add(Context.GetEntity(EntityIdx), FBox::BuildAABB(Location+FVector{0,0,90},Extent));
 		}
 	});
 }
@@ -104,7 +106,12 @@ void UpdateEnemyHashGridProcessor::Execute(FMassEntityManager& EntityManager, FM
 
 			auto Location = TransformFragment.GetTransform().GetLocation();
 
-			BHEnemyFragment.CellLocation = HashGridSubsystem->GetHashGrid_Mutable().Move(Context.GetEntity(EntityIdx), BHEnemyFragment.CellLocation, FBox::BuildAABB(Location, BHEnemyFragment.CollisionExtent));
+			// 使用胶囊体范围构建AABB用于HashGrid
+			FVector Extent(BHEnemyFragment.CapsuleRadius, BHEnemyFragment.CapsuleRadius, BHEnemyFragment.CapsuleHalfHeight);
+			BHEnemyFragment.CellLocation = HashGridSubsystem->GetHashGrid_Mutable().Move(Context.GetEntity(EntityIdx), BHEnemyFragment.CellLocation, FBox::BuildAABB(Location+FVector{0,0,90},Extent));
+
+			// Debug绘制胶囊体
+			//DrawDebugCapsule(Context.GetWorld(), Location+FVector{0,0,90}, BHEnemyFragment.CapsuleHalfHeight, BHEnemyFragment.CapsuleRadius, FQuat::Identity, FColor::Green, false, -1.f, 0, 1.f);
 		}
 
 		TArray<FMassEntityHandle> Entities;

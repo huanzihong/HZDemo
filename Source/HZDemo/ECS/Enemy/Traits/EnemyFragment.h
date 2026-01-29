@@ -17,10 +17,14 @@ struct HZDEMO_API FEnemyFragment : public FMassFragment
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere)
-	float Health;
+	float Health=100;
+
+	// 胶囊体碰撞参数
+	UPROPERTY(EditAnywhere)
+	float CapsuleRadius = 50.f;
 
 	UPROPERTY(EditAnywhere)
-	FVector CollisionExtent = FVector(100.f);
+	float CapsuleHalfHeight = 90.f;
 	
 	UPROPERTY(EditAnywhere)
 	EEnemyState EnemyState = EEnemyState::Other;

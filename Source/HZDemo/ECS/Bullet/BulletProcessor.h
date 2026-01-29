@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "MassProcessor.h"
 #include "MassSignalProcessorBase.h"
+#include "NiagaraSystem.h"
 #include "BulletProcessor.generated.h"
 
 /**
@@ -42,6 +43,19 @@ class UBulletCollisionProcessor : public UMassProcessor
 
 public:
 	UBulletCollisionProcessor();
+	virtual void ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager) override;
+	virtual void Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context) override;
+
+	FMassEntityQuery EntityQuery;
+};
+
+UCLASS()
+class UBulletTrailUpdateProcessor : public UMassProcessor
+{
+	GENERATED_BODY()
+
+public:
+	UBulletTrailUpdateProcessor();
 	virtual void ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager) override;
 	virtual void Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context) override;
 
