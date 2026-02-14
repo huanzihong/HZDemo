@@ -3,19 +3,25 @@
 #include "MassStateTreeTypes.h"
 #include "ECS/Enemy/Traits/EnemyFragment.h"
 #include "EnemyStateEvaluator.generated.h"
+
+struct FTransformFragment;
+
 USTRUCT()
 struct FEnemyStateEvaluatorInstanceData
 {
 	GENERATED_BODY()
 
 	UPROPERTY(VisibleAnywhere, Category = Output)
-	EEnemyState EnemyState = EEnemyState::Other;
+	EEnemyState EnemyState = EEnemyState::None;
 
 	UPROPERTY(EditAnywhere, Category=Output)
 	FMassTargetLocation TargetLocation;
 
 	UPROPERTY(EditAnywhere, Category=Output)
 	bool bRePath = false;
+	
+	UPROPERTY(EditAnywhere, Category=Output)
+	float DistanceToPlayer = 0.0f;
 };
 
 USTRUCT(meta = (DisplayName = "Enemy State Eval"))
@@ -30,4 +36,5 @@ public:
 	virtual void Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const override;
 
 	TStateTreeExternalDataHandle<FEnemyFragment> EnemyFragmentHandle;
+	TStateTreeExternalDataHandle<FTransformFragment> EnemyTransformHandle;
 };
