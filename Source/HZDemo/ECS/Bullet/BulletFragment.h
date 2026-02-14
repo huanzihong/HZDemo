@@ -23,7 +23,7 @@ struct FBulletFragment : public FMassFragment
 	float Speed = 500.f;
 
 	UPROPERTY(EditAnywhere)
-	float Lifetime = 5.f;
+	float Lifetime = 15.f;
 
 	UPROPERTY(EditAnywhere)
 	float DestructForce = 1000.f;
@@ -40,6 +40,9 @@ struct FBulletFragment : public FMassFragment
 
 	UPROPERTY(EditAnywhere, Category = "Explosion")
 	float ExplosionKnockbackForce = 2000.f;
+	
+	UPROPERTY(EditAnywhere, Category = "Explosion")
+	TSoftObjectPtr<UNiagaraSystem> ExplosionAsset;
 
 	// Trail effect component
 	TWeakObjectPtr<UNiagaraComponent> TrailEffect;

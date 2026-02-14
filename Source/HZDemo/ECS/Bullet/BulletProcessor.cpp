@@ -11,10 +11,11 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
 #include "DrawDebugHelpers.h"
-#include "ECS/Enemy/Subsystem/EnemyHashGridSubsystem.h"
+#include "ECS/Enemy/Subsystem/HashGridSubsystem.h"
 #include "ECS/Enemy/Traits/BeHitTags.h"
 #include "ECS/Enemy/Traits/KnockbackFragment.h"
 #include "ECS/Enemy/Traits/EnemyFragment.h"
+#include "Player/HZZombie.h"
 
 UBulletInitializerProcessor::UBulletInitializerProcessor()
 	: EntityQuery(*this)
@@ -70,6 +71,7 @@ void UBulletDestroyerProcessor::ConfigureQueries(const TSharedRef<FMassEntityMan
 {
 	EntityQuery.AddTagRequirement<FBulletTag>(EMassFragmentPresence::All);
 	EntityQuery.AddRequirement<FBulletFragment>(EMassFragmentAccess::ReadWrite);
+	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadWrite);
 }
 
 void UBulletDestroyerProcessor::InitializeInternal(UObject& Owner, const TSharedRef<FMassEntityManager>& EntityManager)
@@ -86,11 +88,52 @@ void UBulletDestroyerProcessor::SignalEntities(FMassEntityManager& EntityManager
 	EntityQuery.ForEachEntityChunk(Context, [this](FMassExecutionContext& Context)
 	{
 		auto BulletFragments = Context.GetMutableFragmentView<FBulletFragment>();
+		auto TransformFragments = Context.GetMutableFragmentView<FTransformFragment>();
 		const int32 NumEntities = Context.GetNumEntities();
 		for (int EntityIdx = 0; EntityIdx < NumEntities; EntityIdx++)
 		{
 			auto& BulletFragment = BulletFragments[EntityIdx];
+			auto& TransformFragment = TransformFragments[EntityIdx];
+			FVector Location = TransformFragment.GetTransform().GetLocation();
+			if (BulletFragment.bTriggerExplosion)
+			{
+				UNiagaraSystem* ExplodSystem = nullptr;
+				if (BulletFragment.ExplosionAsset.IsPending())
+				{
+					ExplodSystem = BulletFragment.ExplosionAsset.LoadSynchronous();
+				}else
+				{
+					ExplodSystem = BulletFragment.ExplosionAsset.Get();
+				}
 
+				// Defer explosion effect spawning to GameThread
+				if (ExplodSystem)
+				{
+					UWorld* World = GetWorld();
+					
+					Context.Defer().PushCommand<FMassDeferredSetCommand>(
+						[World, ExplodSystem, Location](FMassEntityManager& EntityManager)
+						{
+							if (World)
+							{
+								UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+									World,
+									ExplodSystem,
+									Location,
+									FRotator::ZeroRotator,
+									FVector(1.0f),
+									true,
+									true,
+									ENCPoolMethod::None,
+									true
+								);
+							}
+						}
+					);
+				}
+			}
+			
+			
 			// Clean up trail effect
 			if (BulletFragment.TrailEffect.IsValid())
 			{
@@ -120,7 +163,7 @@ void UBulletCollisionProcessor::ConfigureQueries(const TSharedRef<FMassEntityMan
 	EntityQuery.AddTagRequirement<FBulletTag>(EMassFragmentPresence::All);
 	EntityQuery.AddRequirement<FBulletFragment>(EMassFragmentAccess::ReadOnly);
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadOnly);
-	EntityQuery.AddSubsystemRequirement<UEnemyHashGridSubsystem>(EMassFragmentAccess::ReadOnly);
+	EntityQuery.AddSubsystemRequirement<UHashGridSubsystem>(EMassFragmentAccess::ReadOnly);
 	EntityQuery.AddSubsystemRequirement<UMassSignalSubsystem>(EMassFragmentAccess::ReadWrite);
 }
 
@@ -128,7 +171,8 @@ void UBulletCollisionProcessor::Execute(FMassEntityManager& EntityManager, FMass
 {
 	EntityQuery.ForEachEntityChunk(Context, [this, &EntityManager](FMassExecutionContext& Context)
 	{
-		auto HashGridSubsystem = Context.GetSubsystem<UEnemyHashGridSubsystem>();
+		auto HashGridSubsystem = Context.GetSubsystem<UHashGridSubsystem>();
+		auto SignalSubsystem = Context.GetMutableSubsystem<UMassSignalSubsystem>();
 		auto TransformFragments = Context.GetFragmentView<FTransformFragment>();
 		auto BulletFragments = Context.GetFragmentView<FBulletFragment>();
 		const int32 NumEntities = Context.GetNumEntities();
@@ -169,23 +213,14 @@ void UBulletCollisionProcessor::Execute(FMassEntityManager& EntityManager, FMass
 			// Check if bullet hit any enemy
 			if(Entities.Num() > 0)
 			{
-				// Apply knockback to hit enemies
-				/*for(auto Entity: Entities)
-				{
-					auto KnockbackFragment = EntityManager.GetFragmentDataPtr<FKnockbackFragment>(Entity);
-					auto EntityLocation = EntityManager.GetFragmentDataPtr<FTransformFragment>(Entity)->GetTransform().GetLocation();
-					KnockbackFragment->Direction = (EntityLocation-Location).GetSafeNormal();
-					KnockbackFragment->StartTime = GetWorld()->GetTimeSeconds();
-					KnockbackFragment->Force = BulletFragment.DestructForce;
-					Context.Defer().AddTag<FKnockTag>(Entity);
-				}*/
-
+				SignalSubsystem->SignalEntity(BulletHell::Signals::BulletDestroy, Context.GetEntity(EntityIdx));
+				
 				// Handle explosion if enabled
 				if (BulletFragment.bTriggerExplosion)
 				{
 #if ENABLE_DRAW_DEBUG
 					// Draw explosion radius
-					DrawDebugSphere(
+					/*DrawDebugSphere(
 						GetWorld(),
 						Location,
 						BulletFragment.ExplosionRadius,
@@ -195,9 +230,8 @@ void UBulletCollisionProcessor::Execute(FMassEntityManager& EntityManager, FMass
 						2.0f,
 						0,
 						2.0f
-					);
+					);*/
 #endif
-
 					TArray<FMassEntityHandle> ExplosionEntities;
 					HashGridSubsystem->GetHashGrid().Query(
 						FBox::BuildAABB(Location, FVector(BulletFragment.ExplosionRadius)),
@@ -225,9 +259,10 @@ void UBulletCollisionProcessor::Execute(FMassEntityManager& EntityManager, FMass
 								KnockbackFragment->Force = BulletFragment.ExplosionKnockbackForce * FalloffRatio;
 								Context.Defer().AddTag<FKnockTag>(Entity);
 
+
 #if ENABLE_DRAW_DEBUG
 								// Draw line from explosion center to affected enemy
-								DrawDebugLine(
+								/*DrawDebugLine(
 									GetWorld(),
 									Location,
 									EnemyLocation,
@@ -236,23 +271,12 @@ void UBulletCollisionProcessor::Execute(FMassEntityManager& EntityManager, FMass
 									2.0f,
 									0,
 									1.0f
-								);
+								);*/
 #endif
 							}
 						}
 					}
 				}
-
-				// Clean up trail effect before destroying bullet
-				auto& BulletFrag = BulletFragments[EntityIdx];
-				if (BulletFrag.TrailEffect.IsValid())
-				{
-					// Deactivate and let it auto-destroy after particles die
-					BulletFrag.TrailEffect->Deactivate();
-					BulletFrag.TrailEffect->SetAutoDestroy(true);
-				}
-
-				Context.Defer().DestroyEntity(Context.GetEntity(EntityIdx));
 			}
 
 		}
