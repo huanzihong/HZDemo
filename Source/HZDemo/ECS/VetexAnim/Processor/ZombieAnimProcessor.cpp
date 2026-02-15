@@ -6,6 +6,34 @@
 #include "ECS/Enemy/Traits/EnemyFragment.h"
 #include "ECS/VetexAnim/Traits/ZombieAnimationFragment.h"
 
+UZombieAnimInitializerProcessor::UZombieAnimInitializerProcessor():EntityQuery(*this)
+{
+	ObservedType = FZombieAnimationFragment::StaticStruct();
+	Operation = EMassObservedOperation::Add;
+}
+
+void UZombieAnimInitializerProcessor::ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager)
+{
+	EntityQuery.AddRequirement<FZombieAnimationFragment>(EMassFragmentAccess::ReadWrite);
+}
+
+void UZombieAnimInitializerProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
+{
+	EntityQuery.ForEachEntityChunk(Context, [this](FMassExecutionContext& Context)
+	{
+		auto ZombieAnimationFragments = Context.GetMutableFragmentView<FZombieAnimationFragment>();
+		
+		const int32 NumEntities = Context.GetNumEntities();
+		for (int EntityIdx = 0; EntityIdx < NumEntities; EntityIdx++)
+		{
+			auto& ZombieAnimationFragment = ZombieAnimationFragments[EntityIdx];
+			//加入一个偏移 这样每个僵尸走路时的动画就不会完全一样
+			const float StartTimeOffset = FMath::FRandRange(0.0f, 10.0f);
+			ZombieAnimationFragment.GlobalStartTime = StartTimeOffset;
+		}
+	});
+}
+
 UZombieAnimProcessor::UZombieAnimProcessor():AnimationEntityQuery(*this)
 {
 	ExecutionOrder.ExecuteAfter.Add(TEXT("UEnemyStateProcessor"));
@@ -53,11 +81,15 @@ void UZombieAnimProcessor::Execute(FMassEntityManager& EntityManager, FMassExecu
 					case EEnemyState::Wander:
 						StateIndex = 2;
 						break;
+					case EEnemyState::Knock:
+						StateIndex = 4;
+					break;
+					
 					default:
 						break;
 				}
 				
-				if (Velocity.Value.Size()<15)
+				if (Velocity.Value.Size()<15 && StateIndex != 4)
 				{
 					StateIndex = 1;
 				}

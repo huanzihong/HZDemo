@@ -7,7 +7,6 @@ USTRUCT()
 struct HZDEMO_API FZombieAnimationFragment : public FMassFragment
 {
 	GENERATED_BODY()
-
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UAnimToTextureDataAsset> AnimToTextureData;
 	

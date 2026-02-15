@@ -1,9 +1,9 @@
 ﻿#include "ZombieUpdateISMVectexAnimationProcessor.h"
 
+#include "MassCommonFragments.h"
 #include "MassRepresentationFragments.h"
 #include "MassRepresentationSubsystem.h"
 #include "MassRepresentationTypes.h"
-#include "ECS/StateTree/Task/MoveToLocationTask.h"
 #include "ECS/VetexAnim/Traits/ZombieAnimationFragment.h"
 
 UZombieUpdateISMVectexAnimationProcessor::UZombieUpdateISMVectexAnimationProcessor()
@@ -20,7 +20,7 @@ void UZombieUpdateISMVectexAnimationProcessor::UpdateISMVertexAnimation(FMassIns
 	TArray<float> CustomData;
 	CustomData.Add(AnimInfo.StartFrame);
 	CustomData.Add(AnimInfo.EndFrame);
-	CustomData.Add(0);
+	CustomData.Add(AnimationData.GlobalStartTime);
 	CustomData.Add(1);
 	/*InstanceData.CurrentState.StartFrame = AnimInfo.StartFrame;
 	InstanceData.CurrentState.EndFrame = AnimInfo.EndFrame;
