@@ -5,9 +5,7 @@
 #include "MassExecutionContext.h"
 #include "MassRepresentationFragments.h"
 #include "MassSignalSubsystem.h"
-#include "MassStateTreeTypes.h"
 #include "ECS/Enemy/Traits/EnemyFragment.h"
-#include "Kismet/GameplayStatics.h"
 
 UEnemyInitializer::UEnemyInitializer(): EntityQuery(*this)
 {
@@ -92,8 +90,7 @@ void UpdateEnemyHashGridProcessor::ConfigureQueries(const TSharedRef<FMassEntity
 
 void UpdateEnemyHashGridProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
-	FVector PlayerLocation = UGameplayStatics::GetPlayerPawn(Context.GetWorld(), 0)->GetActorLocation();
-	UpdateHashGridQuery.ForEachEntityChunk(Context, [this,PlayerLocation](FMassExecutionContext& Context)
+	UpdateHashGridQuery.ForEachEntityChunk(Context, [this](FMassExecutionContext& Context)
 	{
 		SCOPED_NAMED_EVENT(UpdateHashGrid, FColor::Green);
 		auto HashGridSubsystem = Context.GetMutableSubsystem<UHashGridSubsystem>();
