@@ -15,7 +15,6 @@
 #include "ECS/Enemy/Traits/BeHitTags.h"
 #include "ECS/Enemy/Traits/KnockbackFragment.h"
 #include "ECS/Enemy/Traits/EnemyFragment.h"
-#include "Player/HZZombie.h"
 
 UBulletInitializerProcessor::UBulletInitializerProcessor()
 	: EntityQuery(*this)
@@ -97,15 +96,8 @@ void UBulletDestroyerProcessor::SignalEntities(FMassEntityManager& EntityManager
 			FVector Location = TransformFragment.GetTransform().GetLocation();
 			if (BulletFragment.bTriggerExplosion)
 			{
-				UNiagaraSystem* ExplodSystem = nullptr;
-				if (BulletFragment.ExplosionAsset.IsPending())
-				{
-					ExplodSystem = BulletFragment.ExplosionAsset.LoadSynchronous();
-				}else
-				{
-					ExplodSystem = BulletFragment.ExplosionAsset.Get();
-				}
-
+				UNiagaraSystem* ExplodSystem = BulletFragment.ExplosionAsset;
+				
 				// Defer explosion effect spawning to GameThread
 				if (ExplodSystem)
 				{

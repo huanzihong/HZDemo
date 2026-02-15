@@ -32,15 +32,7 @@ void UBulletSubsystem::SpawnBullet(UMassEntityConfigAsset* BulletConfig, const F
 	}
 	
 	// Get trail effect from config
-	UNiagaraSystem* TrailSystem = nullptr;
-	
-	if (BulletFragment.TrailEffectAsset.IsPending())
-	{
-		TrailSystem = BulletFragment.TrailEffectAsset.LoadSynchronous();
-	}else
-	{
-		TrailSystem = BulletFragment.TrailEffectAsset.Get();
-	}
+	UNiagaraSystem* TrailSystem = BulletFragment.TrailEffectAsset;
 	
 	// Spawn trail effect if configured
 	if (TrailSystem)

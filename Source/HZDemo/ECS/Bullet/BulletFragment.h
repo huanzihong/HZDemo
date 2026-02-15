@@ -42,14 +42,14 @@ struct FBulletFragment : public FMassFragment
 	float ExplosionKnockbackForce = 2000.f;
 	
 	UPROPERTY(EditAnywhere, Category = "Explosion")
-	TSoftObjectPtr<UNiagaraSystem> ExplosionAsset;
+	TObjectPtr<UNiagaraSystem> ExplosionAsset;
 
 	// Trail effect component
 	TWeakObjectPtr<UNiagaraComponent> TrailEffect;
 	
 	// Trail effect asset
 	UPROPERTY(EditAnywhere, Category = "Trail Effect")
-	TSoftObjectPtr<UNiagaraSystem> TrailEffectAsset;
+	TObjectPtr<UNiagaraSystem> TrailEffectAsset;
 };
 
 USTRUCT()
