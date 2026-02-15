@@ -36,7 +36,10 @@ public class HZDemo : ModuleRules
 			"SmartObjectsModule",
 			"MassSmartObjects",
 			"AnimToTexture",
-			"Niagara"
+			"Niagara",
+			"MassActors",
+			"MassNavMeshNavigation",
+			"MassLOD",
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
