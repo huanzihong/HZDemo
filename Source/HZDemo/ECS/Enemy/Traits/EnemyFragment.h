@@ -1,14 +1,16 @@
 ﻿#pragma once
 #include "MassEntityElementTypes.h"
 #include "MassEntityTraitBase.h"
-#include "ECS/Enemy/Subsystem/EnemyHashGridSubsystem.h"
+#include "ECS/Enemy/Subsystem/HashGridSubsystem.h"
 #include "EnemyFragment.generated.h"
 
 UENUM(BlueprintType)
 enum class EEnemyState : uint8
 {
-	Other,
+	Wander,
 	ChasePlayer,
+	Knock,
+	None,
 };
 
 USTRUCT()
@@ -27,7 +29,7 @@ struct HZDEMO_API FEnemyFragment : public FMassFragment
 	float CapsuleHalfHeight = 90.f;
 	
 	UPROPERTY(EditAnywhere)
-	EEnemyState EnemyState = EEnemyState::Other;
+	EEnemyState EnemyState = EEnemyState::None;
 
 	FEnemyHashGrid::FCellLocation CellLocation;
 };

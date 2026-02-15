@@ -2,10 +2,10 @@
 
 #include "MassCommonFragments.h"
 #include "MassExecutionContext.h"
+#include "MassLODFragments.h"
 #include "MassNavigationFragments.h"
 #include "MassSignalSubsystem.h"
 #include "MassStateTreeTypes.h"
-#include "ECS/Enemy/Traits/BeHitTags.h"
 #include "ECS/Enemy/Traits/EnemyFragment.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -20,6 +20,7 @@ void UEnemyWanderProcessor::ConfigureQueries(const TSharedRef<FMassEntityManager
 	EntityQuery.AddTagRequirement<FEnemyTag>(EMassFragmentPresence::All);
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadOnly);
 	EntityQuery.AddRequirement<FMassMoveTargetFragment>(EMassFragmentAccess::ReadWrite);
+	EntityQuery.AddTagRequirement<FMassOffLODTag>(EMassFragmentPresence::None);
 	EntityQuery.AddSubsystemRequirement<UMassSignalSubsystem>(EMassFragmentAccess::ReadWrite);
 	
 }
@@ -38,10 +39,14 @@ void UEnemyWanderProcessor::Execute(FMassEntityManager& EntityManager, FMassExec
 		{
 			auto Transform = TransformList[EntityIndex];
 			auto MoveTarget = MoveTargetList[EntityIndex];
+			//DrawDebugSphere(GetWorld(), MoveTarget.Center, 5.f, 12, FColor::Red, false, 0.1f);
+			//DrawDebugSphere(GetWorld(), Transform.GetTransform().GetLocation(), 5.0f, 12, FColor::Yellow, false, 0.1f);
+			//DrawDebugSphere(Context.GetWorld(), MoveTarget.Center, 50.f, 12, FColor::Blue, false, 5.f);
 			if (MoveTarget.GetCurrentAction() == EMassMovementAction::Move)
 			{
 				auto Distance = FVector::Dist2D(Transform.GetTransform().GetLocation(), MoveTarget.Center);
-				//DrawDebugPoint(GetWorld(), Transform.GetTransform().GetLocation(), 50.0f, FColor::Red, true, 1.0f);
+				
+				//DrawDebugPoint(GetWorld(), Transform.GetTransform().GetLocation(), 50.0f, FColor::Yellow, true, 1.0f);
 				//DrawDebugPoint(GetWorld(), MoveTarget.Center, 50.0f, FColor::Blue, true, 1.0f);
 				if (Distance < 100.f)
 				{
