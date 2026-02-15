@@ -16,7 +16,7 @@ class HZDEMO_API UBulletSubsystem : public UWorldSubsystem
 public:
 
 	UFUNCTION(BlueprintCallable)
-	void SpawnBullet(UMassEntityConfigAsset* BulletConfig, const FVector& Location, const FVector& Direction);
+	void SpawnBullet(UMassEntityConfigAsset* BulletConfig, const FVector& Location, const FVector& Direction,TOptional<FVector>& TargetLocation);
 
 	UFUNCTION(BlueprintCallable)
 	void SpawnBulletWithTrail(UMassEntityConfigAsset* BulletConfig, UNiagaraSystem* TrailSystem, const FVector& Location, const FVector& Direction);

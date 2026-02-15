@@ -9,7 +9,7 @@
 
 
 void UBulletSubsystem::SpawnBullet(UMassEntityConfigAsset* BulletConfig, const FVector& Location,
-                                     const FVector& Direction)
+                                     const FVector& Direction,TOptional<FVector>& TargetLocation)
 {
 	check(BulletConfig);
 	auto SignalSubsystem = GetWorld()->GetSubsystem<UMassSignalSubsystem>();
@@ -22,10 +22,17 @@ void UBulletSubsystem::SpawnBullet(UMassEntityConfigAsset* BulletConfig, const F
 	auto& BulletFragment = EntityManager.GetFragmentDataChecked<FBulletFragment>(EntitiesSpawned[0]);
 	BulletFragment.Direction = Direction;
 	BulletFragment.SpawnLocation = Location;
-
+	if (TargetLocation.IsSet())
+	{
+		float LifeTime = (TargetLocation.GetValue() - Location).Size() / BulletFragment.Speed;
+		if (LifeTime < BulletFragment.Lifetime)
+		{
+			BulletFragment.Lifetime = LifeTime;
+		}
+	}
+	
 	// Get trail effect from config
 	UNiagaraSystem* TrailSystem = nullptr;
-	
 	
 	if (BulletFragment.TrailEffectAsset.IsPending())
 	{
