@@ -20,9 +20,15 @@ void UCombatComponent::EquipWeapon(AWeapon* InWeapon)
 		const FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
 		EquippedWeapon->AttachToComponent(Character->GetMesh(), AttachmentRules, FName("Weapon"));
 	}
+	
+	bEquipped = true;
 }
 
 void UCombatComponent::SetAimming(bool bAim)
 {
+	if (auto Player = Cast<APawn>(GetOwner()))
+	{
+		Player->bUseControllerRotationYaw = bAim;
+	}
 	bAimming = bAim;
 }

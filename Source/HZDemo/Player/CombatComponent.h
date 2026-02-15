@@ -29,7 +29,12 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Combat")
 	TObjectPtr<AWeapon> OverlappingWeapon;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+	bool bEquipped = false;
 
 	bool bAimming;
+	
+	
 	
 };
