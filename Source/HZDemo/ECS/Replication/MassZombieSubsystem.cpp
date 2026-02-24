@@ -1,5 +1,4 @@
-﻿#include "MassZombieSubsystem.h"
-
+#include "MassZombieSubsystem.h"
 #include "MassReplicationSubsystem.h"
 #include "MassZombieBubble.h"
 
@@ -11,3 +10,5 @@ void UMassZombieSubsystem::PostInitialize()
 	check(ReplicationSubsystem);
 	ReplicationSubsystem->RegisterBubbleInfoClass(AMassZombieClientBubbleInfo::StaticClass());
 }
+
+

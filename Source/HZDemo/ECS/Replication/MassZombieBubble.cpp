@@ -1,6 +1,7 @@
 ﻿#include "MassZombieBubble.h"
 
 #include "Net/UnrealNetwork.h"
+#include "ECS/Enemy/Traits/EnemyFragment.h"
 
 void FMassZombieClientBubbleHandler::PostReplicatedAdd(const TArrayView<int32> AddedIndices, int32 FinalSize)
 {
@@ -8,6 +9,7 @@ void FMassZombieClientBubbleHandler::PostReplicatedAdd(const TArrayView<int32> A
 	{
 		NavPathHandler.AddRequirementsForSpawnQuery(InQuery);
 		TransformHandler.AddRequirementsForSpawnQuery(InQuery);
+		InQuery.AddRequirement<FEnemyFragment>(EMassFragmentAccess::ReadWrite);
 	};
 
 	auto CacheFragmentViewsForSpawnQuery = [this](FMassExecutionContext& InExecContext)
@@ -20,11 +22,15 @@ void FMassZombieClientBubbleHandler::PostReplicatedAdd(const TArrayView<int32> A
 	{
 		NavPathHandler.SetSpawnedEntityData(EntityIdx, ReplicatedEntity.GetReplicatedNavPathData());
 		TransformHandler.SetSpawnedEntityData(EntityIdx, ReplicatedEntity.GetReplicatedPositionYawData());
+		FEnemyFragment& EnemyFragment = EntityView.GetFragmentData<FEnemyFragment>();
+		EnemyFragment.EnemyState = ReplicatedEntity.GetReplicatedEnemyStateData().GetEnemyState();
 	};
 
 	auto SetModifiedEntityData = [this](const FMassEntityView& EntityView, const FReplicatedZombieAgent& Item)
 	{
 		NavPathHandler.SetModifiedEntityData(EntityView, Item.GetReplicatedNavPathData());
+		FEnemyFragment& EnemyFragment = EntityView.GetFragmentData<FEnemyFragment>();
+		EnemyFragment.EnemyState = Item.GetReplicatedEnemyStateData().GetEnemyState();
 	};
 
 	PostReplicatedAddHelper(AddedIndices, AddRequirementsForSpawnQuery, CacheFragmentViewsForSpawnQuery, SetSpawnedEntityData, SetModifiedEntityData);
@@ -38,10 +44,28 @@ void FMassZombieClientBubbleHandler::PostReplicatedChange(const TArrayView<int32
 	auto SetModifiedEntityData = [this](const FMassEntityView& EntityView, const FReplicatedZombieAgent& Item)
 	{
 		NavPathHandler.SetModifiedEntityData(EntityView, Item.GetReplicatedNavPathData());
+		FEnemyFragment& EnemyFragment = EntityView.GetFragmentData<FEnemyFragment>();
+		EnemyFragment.EnemyState = Item.GetReplicatedEnemyStateData().GetEnemyState();
 	};
 
 	PostReplicatedChangeHelper(ChangedIndices, SetModifiedEntityData);
 }
+
+#if UE_REPLICATION_COMPILE_SERVER_CODE
+void FMassZombieClientBubbleHandler::SetBubbleEnemyState(const FMassReplicatedAgentHandle Handle, const EEnemyState InEnemyState)
+{
+	check(AgentHandleManager.IsValidHandle(Handle));
+
+	const int32 AgentsIdx = AgentLookupArray[Handle.GetIndex()].AgentsIdx;
+	FZombieFastArrayItem& Item = (*Agents)[AgentsIdx];
+
+	FReplicatedEnemyStateData& ReplicatedState = Item.Agent.GetReplicatedEnemyStateDataMutable();
+	if (ReplicatedState.UpdateFromEnemyState(InEnemyState))
+	{
+		Serializer->MarkItemDirty(Item);
+	}
+}
+#endif // UE_REPLICATION_COMPILE_SERVER_CODE
 
 /*void FMassZombieClientBubbleHandler::PostReplicatedChangeEntity(const FMassEntityView& EntityView,
 	const FReplicatedZombieAgent& Item) const

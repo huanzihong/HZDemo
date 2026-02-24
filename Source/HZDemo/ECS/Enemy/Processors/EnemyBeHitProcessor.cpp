@@ -43,7 +43,7 @@ UKnockSignalProcessor::UKnockSignalProcessor():EntityQuery(*this)
 
 void UKnockBackProcessor::ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager)
 {
-	EntityQuery.AddTagRequirement<FKnockTag>(EMassFragmentPresence::All);
+	//EntityQuery.AddTagRequirement<FKnockTag>(EMassFragmentPresence::All);
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadWrite);
 	EntityQuery.AddRequirement<FMassVelocityFragment>(EMassFragmentAccess::ReadWrite);
 	EntityQuery.AddRequirement<FKnockbackFragment>(EMassFragmentAccess::ReadWrite);
@@ -63,13 +63,22 @@ void UKnockBackProcessor::Execute(FMassEntityManager& EntityManager, FMassExecut
 		const TArrayView<FMassActorFragment> ActorList = Context.GetMutableFragmentView<FMassActorFragment>();
 		TArrayView<FEnemyFragment> EnemyList = Context.GetMutableFragmentView<FEnemyFragment>();
 		const int32 NumEntities = Context.GetNumEntities();
+		
 
 		for (int32 i = 0; i < NumEntities; ++i)
 		{
+			
+			FEnemyFragment& Enemy = EnemyList[i];
+			
+			if (Enemy.EnemyState != EEnemyState::Knock)
+			{
+				continue;
+			}
+			
 			FKnockbackFragment& Knockback = KnockbackList[i];
 			FMassDesiredMovementFragment& DesiredMovementFragment = MovementList[i];
 			const FMassActorFragment& Actor = ActorList[i];
-			FEnemyFragment& Enemy = EnemyList[i];
+			
 			UHZZombieAnimInstance* ZombieAnimInstance = nullptr;
 			if (auto ZombieActor = Actor.Get())
 			{
@@ -86,15 +95,15 @@ void UKnockBackProcessor::Execute(FMassEntityManager& EntityManager, FMassExecut
 
 			if (ElapsedTime < Knockback.Duration)
 			{
-				if (Enemy.EnemyState == EEnemyState::ChasePlayer)
+				/*if (Enemy.EnemyState == EEnemyState::ChasePlayer)
 				{
 					Context.Defer().RemoveTag<FChasePlayerTag>(Context.GetEntity(i));
-				}
+				}*/
 				
-				if (Enemy.EnemyState != EEnemyState::Knock)
+				/*if (Enemy.EnemyState != EEnemyState::Knock)
 				{
 					Enemy.EnemyState = EEnemyState::Knock;
-				}
+				}*/
 				// 计算击退衰减（使用二次衰减曲线）
 				float Alpha = ElapsedTime / Knockback.Duration;
 				float Attenuation = 1.0f - FMath::Square(Alpha);
@@ -113,8 +122,8 @@ void UKnockBackProcessor::Execute(FMassEntityManager& EntityManager, FMassExecut
 				DesiredMovementFragment.DesiredVelocity = FVector::ZeroVector;
 				
 				// 移除击退标签
-				Context.Defer().RemoveTag<FKnockTag>(Context.GetEntity(i));
-				Context.Defer().DestroyEntity(Context.GetEntity(i));
+				//Context.Defer().RemoveTag<FKnockTag>(Context.GetEntity(i));
+				
 				if (ZombieAnimInstance)
 				{
 					ZombieAnimInstance->SetKnockedBack(false);
@@ -124,6 +133,8 @@ void UKnockBackProcessor::Execute(FMassEntityManager& EntityManager, FMassExecut
 				{
 					Enemy.EnemyState = EEnemyState::None;
 				}
+				
+				Context.Defer().DestroyEntity(Context.GetEntity(i));
 			}
 		}
 	});

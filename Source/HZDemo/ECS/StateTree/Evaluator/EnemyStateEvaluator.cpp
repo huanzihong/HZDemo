@@ -3,7 +3,42 @@
 #include "MassCommonFragments.h"
 #include "StateTreeExecutionContext.h"
 #include "StateTreeLinker.h"
-#include "Kismet/GameplayStatics.h"
+#include "Engine/World.h"
+
+namespace
+{
+	bool FindNearestPlayerPawn(UWorld* World, const FVector& FromLocation, FVector& OutLocation)
+	{
+		if (!World)
+		{
+			return false;
+		}
+
+		float BestDistSq = TNumericLimits<float>::Max();
+		bool bFound = false;
+
+		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+		{
+			const APlayerController* PC = It->Get();
+			const APawn* Pawn = PC ? PC->GetPawn() : nullptr;
+			if (!IsValid(Pawn))
+			{
+				continue;
+			}
+
+			const FVector PawnLocation = Pawn->GetActorLocation();
+			const float DistSq = FVector::DistSquared2D(FromLocation, PawnLocation);
+			if (DistSq < BestDistSq)
+			{
+				BestDistSq = DistSq;
+				OutLocation = PawnLocation;
+				bFound = true;
+			}
+		}
+
+		return bFound;
+	}
+}
 
 bool FEnemyStateEvaluator::Link(FStateTreeLinker& Linker)
 {
@@ -17,9 +52,18 @@ void FEnemyStateEvaluator::Tick(FStateTreeExecutionContext& Context, const float
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	FEnemyFragment& EnemyFragment = Context.GetExternalData(EnemyFragmentHandle);
 	FTransformFragment& EnemyTransform = Context.GetExternalData(EnemyTransformHandle);
-	auto PlayerLocation = UGameplayStatics::GetPlayerPawn(Context.GetWorld(),0)->GetActorLocation();
-	
+
 	auto EnemyLocation = EnemyTransform.GetTransform().GetLocation();
+	FVector PlayerLocation = FVector::ZeroVector;
+	const bool bHasPlayer = FindNearestPlayerPawn(Context.GetWorld(), EnemyLocation, PlayerLocation);
+	if (!bHasPlayer)
+	{
+		InstanceData.bRePath = false;
+		InstanceData.DistanceToPlayer = 0.0f;
+		InstanceData.EnemyState = EnemyFragment.EnemyState;
+		return;
+	}
+
 	auto Direction = (EnemyLocation-PlayerLocation).GetSafeNormal();
 	if(!InstanceData.TargetLocation.EndOfPathPosition.IsSet())
 	{

@@ -9,6 +9,7 @@
 UZombieUpdateISMVectexAnimationProcessor::UZombieUpdateISMVectexAnimationProcessor()
 {
 	ExecutionOrder.ExecuteAfter.Add(UE::Mass::ProcessorGroupNames::Tasks);
+	ExecutionFlags = static_cast<int32>(EProcessorExecutionFlags::AllNetModes);
 }
 
 void UZombieUpdateISMVectexAnimationProcessor::UpdateISMVertexAnimation(FMassInstancedStaticMeshInfo& ISMInfo,

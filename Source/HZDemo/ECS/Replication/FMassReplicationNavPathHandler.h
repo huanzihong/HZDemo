@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "MassNavigationFragments.h"
 #include "MassClientBubbleHandler.h"
+#include "Engine/World.h"
 
 #include "FMassReplicationNavPathHandler.generated.h"
 
@@ -10,13 +11,66 @@ struct FReplicatedAgentNavPathData
 	GENERATED_BODY()
 
 	FReplicatedAgentNavPathData(){};
+
+	void SetFromMoveTarget(const FMassMoveTargetFragment& MoveTargetFragment);
+	bool UpdateFromMoveTarget(const FMassMoveTargetFragment& MoveTargetFragment);
 	
 	void SetMoveTargetCenter(const FVector& InPosition) { MoveTargetCenter = InPosition; }
 	const FVector& GetMoveTargetCenter() const { return MoveTargetCenter; }
+
+	void SetMoveTargetForward(const FVector& InForward) { MoveTargetForward = InForward; }
+	const FVector& GetMoveTargetForward() const { return MoveTargetForward; }
+
+	void SetDistanceToGoal(const float InDistance) { DistanceToGoal = InDistance; }
+	float GetDistanceToGoal() const { return DistanceToGoal; }
+
+	void SetSlackRadius(const float InSlackRadius) { SlackRadius = InSlackRadius; }
+	float GetSlackRadius() const { return SlackRadius; }
+
+	void SetDesiredSpeed(const FMassInt16Real& InDesiredSpeed) { DesiredSpeed = InDesiredSpeed; }
+	const FMassInt16Real& GetDesiredSpeed() const { return DesiredSpeed; }
+
+	void SetIntentAtGoal(const EMassMovementAction InIntentAtGoal) { IntentAtGoal = InIntentAtGoal; }
+	EMassMovementAction GetIntentAtGoal() const { return IntentAtGoal; }
+
+	void SetAction(const EMassMovementAction InAction) { Action = InAction; }
+	EMassMovementAction GetAction() const { return Action; }
+
+	void SetActionID(const uint16 InActionID) { ActionID = InActionID; }
+	uint16 GetActionID() const { return ActionID; }
+
+	void SetActionServerStartTime(const double InServerStartTime) { ActionServerStartTime = InServerStartTime; }
+	double GetActionServerStartTime() const { return ActionServerStartTime; }
+
+	void SetOffBoundaries(const bool bInOffBoundaries) { bOffBoundaries = bInOffBoundaries; }
+	bool GetOffBoundaries() const { return bOffBoundaries; }
+
+	void SetSteeringFallingBehind(const bool bInSteeringFallingBehind) { bSteeringFallingBehind = bInSteeringFallingBehind; }
+	bool GetSteeringFallingBehind() const { return bSteeringFallingBehind; }
 	
 private:
 	UPROPERTY(Transient)
 	FVector MoveTargetCenter;
+	UPROPERTY(Transient)
+	FVector MoveTargetForward = FVector::ZeroVector;
+	UPROPERTY(Transient)
+	float DistanceToGoal = 0.0f;
+	UPROPERTY(Transient)
+	float SlackRadius = 0.0f;
+	UPROPERTY(Transient)
+	FMassInt16Real DesiredSpeed = FMassInt16Real(0.0f);
+	UPROPERTY(Transient)
+	EMassMovementAction IntentAtGoal = EMassMovementAction::Move;
+	UPROPERTY(Transient)
+	EMassMovementAction Action = EMassMovementAction::Move;
+	UPROPERTY(Transient)
+	uint16 ActionID = 0;
+	UPROPERTY(Transient)
+	double ActionServerStartTime = 0.0;
+	UPROPERTY(Transient)
+	bool bOffBoundaries = false;
+	UPROPERTY(Transient)
+	bool bSteeringFallingBehind = false;
 };
 
 template<typename AgentArrayItem>
@@ -29,7 +83,7 @@ public:
 
 #if UE_REPLICATION_COMPILE_SERVER_CODE
 	/** Sets the move target data in the client bubble on the server */
-	void SetBubbleMoveTarget(const FMassReplicatedAgentHandle Handle, const FVector& MoveTarget);
+	void SetBubbleMoveTarget(const FMassReplicatedAgentHandle Handle, const FMassMoveTargetFragment& MoveTargetFragment);
 
 	// Another function  SetBubbleTransform() could be added here if required
 #endif // UE_REPLICATION_COMPILE_SERVER_CODE
@@ -46,14 +100,14 @@ public:
 	void SetSpawnedEntityData(const int32 EntityIdx, const FReplicatedAgentNavPathData& ReplicatedPathData) const;
 
 	/** Call this when an Entity that has already been spawned is modified on the client */
-	static void SetModifiedEntityData(const FMassEntityView& EntityView, const FReplicatedAgentNavPathData& ReplicatedPathData);
+	void SetModifiedEntityData(const FMassEntityView& EntityView, const FReplicatedAgentNavPathData& ReplicatedPathData);
 
 	// We could easily add support replicating FReplicatedAgentTransformData here if required
 #endif // UE_REPLICATION_COMPILE_CLIENT_CODE
 
 protected:
 #if UE_REPLICATION_COMPILE_CLIENT_CODE
-	static void SetEntityData(FMassMoveTargetFragment& MoveTargetFragment, const FReplicatedAgentNavPathData& ReplicatedPathData);
+	void SetEntityData(FMassMoveTargetFragment& MoveTargetFragment, const FReplicatedAgentNavPathData& ReplicatedPathData) const;
 #endif // UE_REPLICATION_COMPILE_CLIENT_CODE
 
 protected:
@@ -64,7 +118,7 @@ protected:
 
 #if UE_REPLICATION_COMPILE_SERVER_CODE
 template<typename AgentArrayItem>
-void TMassClientBubbleNavPathHandler<AgentArrayItem>::SetBubbleMoveTarget(const FMassReplicatedAgentHandle Handle,  const FVector& MoveTarget)
+void TMassClientBubbleNavPathHandler<AgentArrayItem>::SetBubbleMoveTarget(const FMassReplicatedAgentHandle Handle, const FMassMoveTargetFragment& MoveTargetFragment)
 {
 	check(OwnerHandler.AgentHandleManager.IsValidHandle(Handle));
 
@@ -78,13 +132,7 @@ void TMassClientBubbleNavPathHandler<AgentArrayItem>::SetBubbleMoveTarget(const 
 	// GetReplicatedNavPathDataMutable() must be defined in your FReplicatedAgentBase derived class
 	FReplicatedAgentNavPathData& ReplicatedNavPath = Item.Agent.GetReplicatedNavPathDataMutable();
 
-	// Only update the Pos and mark the item as dirty if it has changed more than the tolerance
-	const FVector Pos = MoveTarget;
-	if (!Pos.Equals(ReplicatedNavPath.GetMoveTargetCenter(), 1.0))
-	{
-		ReplicatedNavPath.SetMoveTargetCenter(Pos);
-		bMarkDirty = true;
-	}
+	bMarkDirty = ReplicatedNavPath.UpdateFromMoveTarget(MoveTargetFragment);
 
 	if (bMarkDirty)
 	{
@@ -141,9 +189,26 @@ void TMassClientBubbleNavPathHandler<AgentArrayItem>::SetModifiedEntityData(cons
 
 #if UE_REPLICATION_COMPILE_CLIENT_CODE
 template<typename AgentArrayItem>
-void TMassClientBubbleNavPathHandler<AgentArrayItem>::SetEntityData(FMassMoveTargetFragment& MoveTargetFragment, const FReplicatedAgentNavPathData& ReplicatedPathData)
+void TMassClientBubbleNavPathHandler<AgentArrayItem>::SetEntityData(FMassMoveTargetFragment& MoveTargetFragment, const FReplicatedAgentNavPathData& ReplicatedPathData) const
 {
 	MoveTargetFragment.Center = ReplicatedPathData.GetMoveTargetCenter();
+	MoveTargetFragment.Forward = ReplicatedPathData.GetMoveTargetForward();
+	MoveTargetFragment.DistanceToGoal = ReplicatedPathData.GetDistanceToGoal();
+	MoveTargetFragment.SlackRadius = ReplicatedPathData.GetSlackRadius();
+	MoveTargetFragment.DesiredSpeed = ReplicatedPathData.GetDesiredSpeed();
+	MoveTargetFragment.IntentAtGoal = ReplicatedPathData.GetIntentAtGoal();
+	MoveTargetFragment.bOffBoundaries = ReplicatedPathData.GetOffBoundaries();
+	MoveTargetFragment.bSteeringFallingBehind = ReplicatedPathData.GetSteeringFallingBehind();
+
+	UWorld* World = OwnerHandler.Serializer ? OwnerHandler.Serializer->GetWorld() : nullptr;
+	if (World != nullptr)
+	{
+		if (MoveTargetFragment.GetCurrentActionID() != ReplicatedPathData.GetActionID())
+		{
+			MoveTargetFragment.CreateReplicatedAction(ReplicatedPathData.GetAction(), ReplicatedPathData.GetActionID(),
+				World->GetTimeSeconds(), ReplicatedPathData.GetActionServerStartTime());
+		}
+	}
 }
 #endif // UE_REPLICATION_COMPILE_CLIENT_CODE
 
@@ -163,6 +228,7 @@ public:
 	 */
 	HZDEMO_API void AddEntity(const int32 EntityIdx, FReplicatedAgentNavPathData& InOUtReplicatedPathData) const;
 	HZDEMO_API FVector GetMoveTargetCenter(const int32 EntityIdx) const;
+	HZDEMO_API const FMassMoveTargetFragment& GetMoveTargetFragment(const int32 EntityIdx) const;
 
 	/**
 	 * Set the replicated path data when we are modifying an entity that already exists in the client bubble.
@@ -178,4 +244,3 @@ public:
 	TArrayView<FMassMoveTargetFragment> MoveTargetList;
 	//TArrayView<FMassZoneGraphLaneLocationFragment> LaneLocationList;
 };
-

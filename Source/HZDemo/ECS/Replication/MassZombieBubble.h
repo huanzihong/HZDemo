@@ -2,6 +2,7 @@
 #include "MassClientBubbleInfoBase.h"
 #include "MassClientBubbleSerializerBase.h"
 #include "MassZombieReplicatedAgent.h"
+#include "ECS/Enemy/Traits/EnemyFragment.h"
 
 #include "MassZombieBubble.generated.h"
 
@@ -23,6 +24,8 @@ public:
 	FMassClientBubbleTransformHandler& GetTransformHandlerMutable() { return TransformHandler; }
 	const FMassClientBubbleNavPathHandler& GetNavPathHandler() const { return NavPathHandler; }
 	FMassClientBubbleNavPathHandler& GetNavPathHandlerMutable() { return NavPathHandler; }
+
+	void SetBubbleEnemyState(const FMassReplicatedAgentHandle Handle, const EEnemyState InEnemyState);
 #endif // UE_REPLICATION_COMPILE_SERVER_CODE
 
 

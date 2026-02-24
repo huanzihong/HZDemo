@@ -235,7 +235,7 @@ void UBulletCollisionProcessor::Execute(FMassEntityManager& EntityManager, FMass
 					{
 						const FTransformFragment* TransformFrag = EntityManager.GetFragmentDataPtr<FTransformFragment>(Entity);
 						if (!TransformFrag) continue;
-
+						FEnemyFragment* EnemyFrag = EntityManager.GetFragmentDataPtr<FEnemyFragment>(Entity);
 						FVector EnemyLocation = TransformFrag->GetTransform().GetLocation();
 						float Distance = FVector::Dist(Location, EnemyLocation);
 
@@ -249,7 +249,8 @@ void UBulletCollisionProcessor::Execute(FMassEntityManager& EntityManager, FMass
 								KnockbackFragment->Direction = (EnemyLocation - Location).GetSafeNormal();
 								KnockbackFragment->StartTime = GetWorld()->GetTimeSeconds();
 								KnockbackFragment->Force = BulletFragment.ExplosionKnockbackForce * FalloffRatio;
-								Context.Defer().AddTag<FKnockTag>(Entity);
+								EnemyFrag->EnemyState = EEnemyState::Knock;
+								//Context.Defer().AddTag<FKnockTag>(Entity);
 
 
 #if ENABLE_DRAW_DEBUG

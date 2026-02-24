@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "AnimToTextureDataAsset.h"
 #include "MassEntityElementTypes.h"
+#include "MassEntityConcepts.h"
 #include "ZombieAnimationFragment.generated.h"
 
 USTRUCT()
@@ -14,4 +15,13 @@ struct HZDEMO_API FZombieAnimationFragment : public FMassFragment
 	float PlayRate = 1.0f;
 	int32 AnimationStateIndex = 0;
 	//bool bSwappedThisFrame = false;
+};
+
+template<>
+struct TMassFragmentTraits<FZombieAnimationFragment> final
+{
+	enum
+	{
+		AuthorAcceptsItsNotTriviallyCopyable = true
+	};
 };

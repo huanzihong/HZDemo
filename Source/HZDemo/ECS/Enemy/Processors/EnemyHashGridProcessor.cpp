@@ -10,7 +10,7 @@
 UEnemyInitializer::UEnemyInitializer(): EntityQuery(*this)
 {
 	ObservedType = FEnemyTag::StaticStruct();
-	Operation = EMassObservedOperation::Add;
+	ObservedOperations = EMassObservedOperationFlags::Add;
 }
 
 void UEnemyInitializer::ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager)
@@ -46,7 +46,7 @@ void UEnemyInitializer::Execute(FMassEntityManager& EntityManager, FMassExecutio
 UEnemyDestructor::UEnemyDestructor(): EntityQuery(*this)
 {
 	ObservedType = FEnemyFragment::StaticStruct();
-	Operation = EMassObservedOperation::Remove;
+	ObservedOperations = EMassObservedOperationFlags::Remove;
 }
 
 void UEnemyDestructor::ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager)

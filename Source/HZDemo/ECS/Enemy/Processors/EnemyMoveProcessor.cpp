@@ -16,8 +16,9 @@ UEnemyWanderProcessor::UEnemyWanderProcessor():EntityQuery(*this)
 
 void UEnemyWanderProcessor::ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager)
 {
-	EntityQuery.AddTagRequirement<FChasePlayerTag>(EMassFragmentPresence::None);
+	//EntityQuery.AddTagRequirement<FChasePlayerTag>(EMassFragmentPresence::None);
 	EntityQuery.AddTagRequirement<FEnemyTag>(EMassFragmentPresence::All);
+	EntityQuery.AddRequirement<FEnemyFragment>(EMassFragmentAccess::ReadOnly);
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadOnly);
 	EntityQuery.AddRequirement<FMassMoveTargetFragment>(EMassFragmentAccess::ReadWrite);
 	EntityQuery.AddTagRequirement<FMassOffLODTag>(EMassFragmentPresence::None);
@@ -27,16 +28,24 @@ void UEnemyWanderProcessor::ConfigureQueries(const TSharedRef<FMassEntityManager
 
 void UEnemyWanderProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
-	FVector PlayerLocation = UGameplayStatics::GetPlayerPawn(Context.GetWorld(), 0)->GetActorLocation();
+	//FVector PlayerLocation = UGameplayStatics::GetPlayerPawn(Context.GetWorld(), 0)->GetActorLocation();
 
-	EntityQuery.ForEachEntityChunk(Context, [&, PlayerLocation](FMassExecutionContext& MassExecutionContext)
+	EntityQuery.ForEachEntityChunk(Context, [&](FMassExecutionContext& MassExecutionContext)
 	{
 		const TConstArrayView<FTransformFragment> TransformList = MassExecutionContext.GetFragmentView<FTransformFragment>();
 		const TArrayView<FMassMoveTargetFragment> MoveTargetList = MassExecutionContext.GetMutableFragmentView<FMassMoveTargetFragment>();
+		const TConstArrayView<FEnemyFragment> EnemyList = MassExecutionContext.GetFragmentView<FEnemyFragment>();
 		auto MassSignalSubsystem = MassExecutionContext.GetMutableSubsystem<UMassSignalSubsystem>();
 		
 		for (int EntityIndex = 0; EntityIndex < MassExecutionContext.GetNumEntities(); ++EntityIndex)
 		{
+			
+			auto Enemy = EnemyList[EntityIndex];
+			
+			if (Enemy.EnemyState != EEnemyState::Wander)
+			{
+				continue;
+			}
 			auto Transform = TransformList[EntityIndex];
 			auto MoveTarget = MoveTargetList[EntityIndex];
 			//DrawDebugSphere(GetWorld(), MoveTarget.Center, 5.f, 12, FColor::Red, false, 0.1f);

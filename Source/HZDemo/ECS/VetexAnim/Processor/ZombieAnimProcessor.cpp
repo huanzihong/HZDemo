@@ -9,7 +9,8 @@
 UZombieAnimInitializerProcessor::UZombieAnimInitializerProcessor():EntityQuery(*this)
 {
 	ObservedType = FZombieAnimationFragment::StaticStruct();
-	Operation = EMassObservedOperation::Add;
+	ObservedOperations = EMassObservedOperationFlags::Add;
+	ExecutionFlags = static_cast<int32>(EProcessorExecutionFlags::AllNetModes);
 }
 
 void UZombieAnimInitializerProcessor::ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager)
@@ -37,6 +38,7 @@ void UZombieAnimInitializerProcessor::Execute(FMassEntityManager& EntityManager,
 UZombieAnimProcessor::UZombieAnimProcessor():AnimationEntityQuery(*this)
 {
 	ExecutionOrder.ExecuteAfter.Add(TEXT("UEnemyStateProcessor"));
+	ExecutionFlags = static_cast<int32>(EProcessorExecutionFlags::AllNetModes);
 	
 }
 void UZombieAnimProcessor::ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager)
